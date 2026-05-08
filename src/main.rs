@@ -2,6 +2,7 @@ mod discovery;
 mod networking;
 mod models;
 mod utils;
+mod tasks;
 
 use discovery::mdns::start_discovery;
 use networking::server::start_tcp_server;
