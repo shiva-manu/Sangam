@@ -76,7 +76,7 @@ pub async fn send_message(
             return Err(std::io::Error::new(
                 std::io::ErrorKind::TimedOut,
                 "timed out waiting for peer response",
-            ))
+            ));
         }
     };
 
