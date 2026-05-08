@@ -1,0 +1,10 @@
+[package]
+name = "Sangam"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio={version="1",features=["full"]}
+mdns-sd="0.11"
+uuid={version="1",features=["v4"]}
+local-ip-address="0.6"
