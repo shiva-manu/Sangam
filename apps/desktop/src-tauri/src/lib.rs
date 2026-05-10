@@ -7,7 +7,7 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use sangam_core::{DEFAULT_PORT, run};
+use sangam_core::{DEFAULT_PORT, run as run_runtime};
 use serde::Serialize;
 use tauri::{Manager, State};
 use tokio::sync::Mutex;
@@ -47,7 +47,7 @@ async fn start_runtime(state: State<'_, RuntimeState>) -> Result<(), String> {
     *state.shutdown.lock().await = Some(shutdown.clone());
 
     let handle = tokio::spawn(async move {
-        if let Err(e) = run(shutdown).await {
+        if let Err(e) = run_runtime(shutdown).await {
             eprintln!("[Sangam] runtime exited with error: {}", e);
         }
     });
