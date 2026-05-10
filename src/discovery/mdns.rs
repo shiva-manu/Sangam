@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::time::{Duration, sleep};
 
 use crate::networking::client::connect_to_node;
+use crate::tasks::task::Task;
 use crate::utils::sysinfo::NodeSpecs;
 
 /// Service type advertised on the local network. Public so tests / other
@@ -52,6 +53,7 @@ pub async fn start_discovery(
     local_ip: IpAddr,
     port: u16,
     shutdown: Arc<AtomicBool>,
+    demo_task: Task,
 ) {
     let mdns = ServiceDaemon::new().expect("Failed to create mDNS daemon");
 
@@ -98,6 +100,16 @@ pub async fn start_discovery(
     // hammer the same peer every time mDNS re-resolves it.
     let mut connected_peers: HashSet<String> = HashSet::new();
 
+    // Channel carries (target_addr, node_id, task).
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<(String, String, Task)>(5);
+
+    // Spawn a bounded worker that connects to discovered peers.
+    let worker_handle = tokio::spawn(async move {
+        while let Some((target, node_id, task)) = rx.recv().await {
+            connect_to_node(target, node_id, task).await;
+        }
+    });
+
     while !shutdown.load(Ordering::Relaxed) {
         while let Ok(event) = receiver.try_recv() {
             if let ServiceEvent::ServiceResolved(info) = event {
@@ -128,7 +140,15 @@ pub async fn start_discovery(
                 if let Some(addr) = pick_peer_address(info.get_addresses().iter()) {
                     println!("IP   : {}", addr);
                     let target = format!("{}:{}", addr, info.get_port());
-                    tokio::spawn(connect_to_node(target, node_id.clone()));
+
+                    // Send to bounded channel; if the channel is full this
+                    // will back-pressure discovery rather than spawn
+                    // unbounded tasks.
+                    let task = demo_task.clone();
+                    let msg = (target, node_id.clone(), task);
+                    if tx.try_send(msg).is_err() {
+                        eprintln!("[discovery] Connection queue full — skipping peer for now");
+                    }
                 }
 
                 println!("Port : {}", info.get_port());
@@ -149,6 +169,11 @@ pub async fn start_discovery(
 
         sleep(Duration::from_secs(2)).await;
     }
+
+    // Drop the sender so the worker exits its loop once all queued
+    // connections finish.
+    drop(tx);
+    let _ = worker_handle.await;
 
     // Graceful cleanup: tell the daemon to send Goodbye packets so peers
     // remove us from their caches immediately instead of waiting for TTL.

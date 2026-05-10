@@ -5,14 +5,14 @@ use tokio::net::TcpStream;
 use tokio::time::timeout;
 
 use crate::models::message::{MessageType, NodeMessage};
-use crate::tasks::task::{Task, TaskType};
+use crate::tasks::task::Task;
 
 /// How long to wait for a peer's response before giving up.
 pub const RESPONSE_TIMEOUT: Duration = Duration::from_secs(10);
 
-/// Demo entry point used by mDNS discovery: connect to a peer and send a
-/// hard-coded `Sum` task, then print whatever it responds.
-pub async fn connect_to_node(target: String, node_id: String) {
+/// Demo entry point used by mDNS discovery: connect to a peer and send the
+/// provided task, then print whatever it responds.
+pub async fn connect_to_node(target: String, node_id: String, task: Task) {
     println!("Connecting to {}\n", target);
 
     let stream = match TcpStream::connect(&target).await {
@@ -25,12 +25,6 @@ pub async fn connect_to_node(target: String, node_id: String) {
 
     println!("Connected to {}\n", target);
 
-    let task = Task {
-        task_id: "task-001".to_string(),
-        task_type: TaskType::Sum,
-        numbers: vec![1, 2, 3, 4, 5],
-    };
-
     let message = NodeMessage {
         node_id,
         message_type: MessageType::Task(task),
@@ -39,9 +33,12 @@ pub async fn connect_to_node(target: String, node_id: String) {
     match send_message(stream, &message).await {
         Ok(response) => {
             println!("Received Response:");
-            match serde_json::to_string(&response) {
+            match serde_json::to_string_pretty(&response) {
                 Ok(j) => println!("{}\n", j),
-                Err(_) => println!("{:?}\n", response),
+                Err(e) => {
+                    eprintln!("Failed to serialize response for display: {}\n", e);
+                    println!("{:?}\n", response);
+                }
             }
         }
         Err(e) => {

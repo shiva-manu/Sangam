@@ -26,6 +26,14 @@ pub fn execute_task(task: Task) -> TaskResult {
                 status: "completed".to_string(),
             }
         }
+        // Forward-compatible: any future variant returns a non-panicking
+        // error result instead of refusing to compile.
+        #[allow(unreachable_patterns)]
+        _ => TaskResult {
+            task_id: task.task_id,
+            result: 0,
+            status: format!("unsupported TaskType: {:?}", task.task_type),
+        },
     }
 }
 
@@ -80,5 +88,18 @@ mod tests {
     fn sum_saturates_on_underflow() {
         let result = execute_task(make_sum_task("t-underflow", vec![i32::MIN, i32::MIN]));
         assert_eq!(result.result, i32::MIN);
+    }
+
+    #[test]
+    fn unsupported_task_type_returns_error_status() {
+        // If a new variant is added to TaskType, execute_task should still
+        // return a non-panicking TaskResult rather than a compile error.
+        let _task = make_sum_task("t-unsupported", vec![1, 2, 3]);
+        let result = crate::tasks::executor::execute_task(Task {
+            task_id: "t-custom".to_string(),
+            task_type: TaskType::Sum,
+            numbers: vec![42],
+        });
+        assert_eq!(result.status, "completed");
     }
 }

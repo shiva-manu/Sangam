@@ -4,6 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use Sangam::discovery::mdns::start_discovery;
 use Sangam::networking::server::start_tcp_server;
+use Sangam::tasks::task::{Task, TaskType};
 use Sangam::utils::banner::show_banner;
 
 use uuid::Uuid;
@@ -46,8 +47,15 @@ async fn main() -> ExitCode {
     // surfaces instead of being silently swallowed.
     let server_handle = tokio::spawn(start_tcp_server(port));
 
+    // Create a demo task to distribute to discovered peers.
+    let demo_task = Task {
+        task_id: "demo-sum-001".to_string(),
+        task_type: TaskType::Sum,
+        numbers: vec![1, 2, 3, 4, 5],
+    };
+
     // Run mDNS discovery until the shutdown flag is flipped.
-    start_discovery(node_id, local_ip, port, shutdown.clone()).await;
+    start_discovery(node_id, local_ip, port, shutdown.clone(), demo_task).await;
 
     // Tear down the (otherwise-infinite) server task. abort() is fine here
     // because every connection handler is independently spawned; the only

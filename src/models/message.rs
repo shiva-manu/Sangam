@@ -6,6 +6,7 @@ use crate::tasks::task::Task;
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum MessageType {
     Ping,
+    Pong,
     Task(Task),
     Result(TaskResult),
 }
@@ -64,5 +65,13 @@ mod tests {
         let bad = r#"{"node_id":"x","message_type":{"InvalidVariant":{}}}"#;
         let parsed: Result<NodeMessage, _> = serde_json::from_str(bad);
         assert!(parsed.is_err(), "expected parse error for unknown variant");
+    }
+
+    #[test]
+    fn pong_message_roundtrips() {
+        roundtrip(NodeMessage {
+            node_id: "node-a".to_string(),
+            message_type: MessageType::Pong,
+        });
     }
 }

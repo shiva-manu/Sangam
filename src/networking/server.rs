@@ -61,6 +61,38 @@ pub async fn handle_connection(socket: TcpStream) {
     match message.message_type {
         MessageType::Ping => {
             println!("Ping Received");
+
+            let response = NodeMessage {
+                node_id: message.node_id.clone(),
+                message_type: MessageType::Pong,
+            };
+
+            let json = match serde_json::to_string(&response) {
+                Ok(j) => j,
+                Err(e) => {
+                    eprintln!("Failed to serialize Pong response: {}", e);
+                    return;
+                }
+            };
+
+            if let Err(e) = write_half.write_all(json.as_bytes()).await {
+                eprintln!("Failed to send Pong response: {}", e);
+                return;
+            }
+            if let Err(e) = write_half.write_all(b"\n").await {
+                eprintln!("Failed to send Pong delimiter: {}", e);
+                return;
+            }
+            if let Err(e) = write_half.flush().await {
+                eprintln!("Failed to flush Pong response: {}", e);
+                return;
+            }
+
+            println!("Pong Sent Back\n");
+        }
+
+        MessageType::Pong => {
+            println!("Pong Received (ping acknowledged)");
         }
 
         MessageType::Task(task) => {

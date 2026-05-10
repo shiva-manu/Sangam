@@ -27,7 +27,7 @@ impl NodeSpecs {
             RefreshKind::new().with_memory(MemoryRefreshKind::new().with_ram()),
         );
         sys.refresh_memory();
-        let ram_gib = sys.total_memory() / (1024 * 1024 * 1024);
+        let ram_gib = (sys.total_memory() as f64 / (1024.0 * 1024.0 * 1024.0)).round() as u64;
 
         Self {
             cpu_threads,
