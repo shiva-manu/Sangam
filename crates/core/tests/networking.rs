@@ -5,10 +5,10 @@
 
 use std::time::Duration;
 
-use Sangam::models::message::{MessageType, NodeMessage};
-use Sangam::networking::client::send_message;
-use Sangam::networking::server::handle_connection;
-use Sangam::tasks::task::{Task, TaskType};
+use sangam_core::models::message::{MessageType, NodeMessage};
+use sangam_core::networking::client::send_message;
+use sangam_core::networking::server::handle_connection;
+use sangam_core::tasks::task::{Task, TaskType};
 
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time::timeout;

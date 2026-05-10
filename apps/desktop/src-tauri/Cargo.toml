@@ -1,0 +1,30 @@
+[package]
+name = "sangam-desktop"
+version = "0.1.0"
+description = "Sangam — desktop control plane for the Sangam runtime"
+authors = ["Sangam contributors"]
+edition = "2024"
+license = "MIT OR Apache-2.0"
+
+[lib]
+# The `_lib` suffix is intentional — it keeps the lib distinct from the
+# binary on Windows. See https://github.com/rust-lang/cargo/issues/8519.
+name = "sangam_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["sync", "rt-multi-thread", "macros"] }
+local-ip-address = "0.6"
+
+# The Sangam runtime — discovery, networking, task execution.
+# Path-dependency keeps the GUI strictly downstream of the runtime so
+# CLI / daemon / mobile shells can re-use the same engine later.
+sangam-core = { path = "../../../crates/core" }
+

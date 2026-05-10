@@ -5,7 +5,7 @@
 
 use std::net::IpAddr;
 
-use Sangam::discovery::mdns::{SERVICE_TYPE, pick_peer_address};
+use sangam_core::discovery::mdns::{SERVICE_TYPE, pick_peer_address};
 
 #[test]
 fn service_type_uses_correct_mdns_format() {

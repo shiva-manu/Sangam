@@ -18,10 +18,9 @@ env:
   RUSTFLAGS: -D warnings
 
 jobs:
-  check:
-    name: fmt · clippy · test · build
+  core:
+    name: core · fmt · clippy · test
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,11 +36,61 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all --check
 
-      - name: Clippy (deny warnings)
-        run: cargo clippy --all-targets --locked -- -D warnings
+      - name: Clippy (core only — desktop runs in its own job)
+        run: cargo clippy -p sangam-core --all-targets --locked -- -D warnings
 
       - name: Run tests
-        run: cargo test --all-targets --locked --verbose
+        run: cargo test -p sangam-core --all-targets --locked --verbose
 
-      - name: Build (release)
-        run: cargo build --release --locked
+      - name: Build (release, core only)
+        run: cargo build -p sangam-core --release --locked
+
+  desktop:
+    name: desktop · build (Tauri)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Tauri Linux prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo registry & target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: apps/desktop
+        run: npm ci
+
+      - name: Build frontend (so tauri::generate_context! finds dist/)
+        working-directory: apps/desktop
+        run: npm run build
+
+      - name: Clippy (desktop)
+        run: cargo clippy -p sangam-desktop --all-targets --locked -- -D warnings
+
+      - name: Build desktop crate
+        run: cargo build -p sangam-desktop --release --locked

@@ -550,14 +550,52 @@ Sangam aims to become:
 
 ## 🚀 Installation
 
-> ⚠️ **Sangam is in early-stage development.** Installation instructions will be available once the first preview release ships.
+> ⚠️ **Sangam is in early-stage development.** The pieces below already work end-to-end — peer discovery, TCP messaging, task execution — but the public release is not packaged yet.
 
-```bash
-# Coming soon
-$ sangam join
+### Repository layout (current)
+
+```text
+sangam/
+├── apps/
+│   └── desktop/                # Tauri 2 + React + TypeScript GUI
+│       └── src-tauri/          # → depends on sangam-core via path
+├── crates/
+│   └── core/                   # Sangam runtime (discovery, networking, tasks)
+│       ├── src/
+│       └── tests/
+├── .github/workflows/ci.yml    # fmt · clippy · test · build (parallel: core / desktop)
+└── Cargo.toml                  # workspace root
 ```
 
-Want to be notified? **⭐ Star this repo** to follow progress.
+### Run the headless runtime
+
+```bash
+git clone https://github.com/shiva-manu/Sangam.git
+cd Sangam
+cargo run -p sangam-core --release
+```
+
+You'll see the banner, the node ID, and any peers discovered on your LAN.
+Press `Ctrl-C` for a graceful shutdown.
+
+### Run the desktop control plane
+
+Linux prerequisites (Ubuntu/Debian — see [Tauri prereqs](https://tauri.app/start/prerequisites/) for other distros):
+
+```bash
+sudo apt install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
+  libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+```
+
+Then:
+
+```bash
+cd apps/desktop
+npm install
+npm run tauri dev
+```
+
+Want to be notified about the first packaged release? **⭐ Star this repo** to follow progress.
 
 ---
 

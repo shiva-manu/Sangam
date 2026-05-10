@@ -1,0 +1,24 @@
+[package]
+name = "sangam-core"
+version = "0.1.0"
+edition = "2024"
+description = "Sangam runtime — peer discovery, networking, task execution"
+license = "MIT OR Apache-2.0"
+
+[lib]
+name = "sangam_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sangam"
+path = "src/main.rs"
+
+[dependencies]
+tokio={version="1",features=["full"]}
+mdns-sd="0.11"
+uuid={version="1",features=["v4"]}
+local-ip-address="0.6"
+serde={version = "1",features = ["derive"]}
+serde_json="1"
+sysinfo={version="0.32",default-features=false,features=["system"]}
+thiserror="1"
