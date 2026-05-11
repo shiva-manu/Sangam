@@ -2,6 +2,7 @@ use std::process::ExitCode;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
+use sangam_core::peers::PeerRegistry;
 use sangam_core::utils::banner::show_banner;
 use sangam_core::{install_ctrl_c_handler, run};
 
@@ -10,9 +11,10 @@ async fn main() -> ExitCode {
     show_banner();
 
     let shutdown = Arc::new(AtomicBool::new(false));
+    let peers = Arc::new(PeerRegistry::new());
     install_ctrl_c_handler(shutdown.clone());
 
-    match run(shutdown).await {
+    match run(shutdown, peers).await {
         Ok(()) => {
             println!("[Sangam] Bye.");
             ExitCode::SUCCESS

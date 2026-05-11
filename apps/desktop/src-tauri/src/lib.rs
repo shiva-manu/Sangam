@@ -7,6 +7,7 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use sangam_core::peers::{Peer, PeerRegistry};
 use sangam_core::{DEFAULT_PORT, run as run_runtime};
 use serde::Serialize;
 use tauri::{Manager, State};
@@ -16,12 +17,24 @@ use tokio::task::JoinHandle;
 /// Shared state Tauri keeps alive for the whole app lifetime.
 ///
 /// We hold the runtime's `JoinHandle` so the UI can stop the engine via
-/// the `stop_runtime` command, and the shutdown flag so it can do so
-/// gracefully (instead of an abort()).
-#[derive(Default)]
+/// the `stop_runtime` command, the shutdown flag so it can do so
+/// gracefully (instead of an `abort()`), and the peer registry so
+/// read-only commands like `get_peers` can serve data without needing
+/// to bounce through the runtime task.
 struct RuntimeState {
     handle: Mutex<Option<JoinHandle<()>>>,
     shutdown: Mutex<Option<Arc<AtomicBool>>>,
+    peers: Arc<PeerRegistry>,
+}
+
+impl Default for RuntimeState {
+    fn default() -> Self {
+        Self {
+            handle: Mutex::new(None),
+            shutdown: Mutex::new(None),
+            peers: Arc::new(PeerRegistry::new()),
+        }
+    }
 }
 
 /// Snapshot of node info the UI renders in the dashboard header.
@@ -46,8 +59,11 @@ async fn start_runtime(state: State<'_, RuntimeState>) -> Result<(), String> {
     let shutdown = Arc::new(AtomicBool::new(false));
     *state.shutdown.lock().await = Some(shutdown.clone());
 
+    // Hand the runtime our shared registry so the UI sees peers as they
+    // arrive without needing to plumb a separate channel.
+    let peers = state.peers.clone();
     let handle = tokio::spawn(async move {
-        if let Err(e) = run_runtime(shutdown).await {
+        if let Err(e) = run_runtime(shutdown, peers).await {
             eprintln!("[Sangam] runtime exited with error: {}", e);
         }
     });
@@ -93,6 +109,16 @@ async fn get_node_info(state: State<'_, RuntimeState>) -> Result<NodeInfo, Strin
     })
 }
 
+/// Snapshot of all peers known to the registry, freshest first.
+///
+/// Safe to poll: the registry is in-memory and reads are cheap. The UI
+/// hits this on a 2s interval to drive the live mesh visualisation and
+/// node-list cards.
+#[tauri::command]
+async fn get_peers(state: State<'_, RuntimeState>) -> Result<Vec<Peer>, String> {
+    Ok(state.peers.list().await)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -105,6 +131,7 @@ pub fn run() {
             start_runtime,
             stop_runtime,
             get_node_info,
+            get_peers,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -8,6 +8,7 @@
 pub mod discovery;
 pub mod models;
 pub mod networking;
+pub mod peers;
 pub mod tasks;
 pub mod utils;
 
@@ -18,6 +19,7 @@ use uuid::Uuid;
 
 use crate::discovery::mdns::start_discovery;
 use crate::networking::server::start_tcp_server;
+use crate::peers::PeerRegistry;
 use crate::tasks::task::{Task, TaskType};
 
 /// Default TCP port the runtime listens on for peer messages.
@@ -38,7 +40,12 @@ pub enum RuntimeError {
 /// binary and the Tauri desktop shell. The caller owns the shutdown flag
 /// so it can wire it to whatever signal source it prefers (Ctrl-C in the
 /// CLI, a "Stop" button in the GUI, etc.).
-pub async fn run(shutdown: Arc<AtomicBool>) -> Result<(), RuntimeError> {
+///
+/// The caller also owns the [`PeerRegistry`] so that read-only consumers
+/// (Tauri commands, telemetry exporters, future CLI subcommands) can
+/// query the live peer list while the runtime drives writes from the
+/// discovery loop.
+pub async fn run(shutdown: Arc<AtomicBool>, peers: Arc<PeerRegistry>) -> Result<(), RuntimeError> {
     let node_id = Uuid::new_v4().to_string();
     let local_ip = local_ip_address::local_ip()?;
     let port = DEFAULT_PORT;
@@ -51,7 +58,7 @@ pub async fn run(shutdown: Arc<AtomicBool>) -> Result<(), RuntimeError> {
         numbers: vec![1, 2, 3, 4, 5],
     };
 
-    start_discovery(node_id, local_ip, port, shutdown.clone(), demo_task).await;
+    start_discovery(node_id, local_ip, port, shutdown.clone(), demo_task, peers).await;
 
     server_handle.abort();
     match server_handle.await {
