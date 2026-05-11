@@ -6,6 +6,7 @@
 //! runtime without duplicating wiring code.
 
 pub mod discovery;
+pub mod metrics;
 pub mod models;
 pub mod networking;
 pub mod peers;

@@ -7,6 +7,9 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use sangam_core::metrics::{
+    DEFAULT_HISTORY_CAPACITY, DEFAULT_INTERVAL, MetricsSample, MetricsStore, run_collector,
+};
 use sangam_core::peers::{Peer, PeerRegistry};
 use sangam_core::{DEFAULT_PORT, run as run_runtime};
 use serde::Serialize;
@@ -25,6 +28,7 @@ struct RuntimeState {
     handle: Mutex<Option<JoinHandle<()>>>,
     shutdown: Mutex<Option<Arc<AtomicBool>>>,
     peers: Arc<PeerRegistry>,
+    metrics: Arc<MetricsStore>,
 }
 
 impl Default for RuntimeState {
@@ -33,6 +37,7 @@ impl Default for RuntimeState {
             handle: Mutex::new(None),
             shutdown: Mutex::new(None),
             peers: Arc::new(PeerRegistry::new()),
+            metrics: Arc::new(MetricsStore::new(DEFAULT_HISTORY_CAPACITY)),
         }
     }
 }
@@ -119,12 +124,40 @@ async fn get_peers(state: State<'_, RuntimeState>) -> Result<Vec<Peer>, String> 
     Ok(state.peers.list().await)
 }
 
+/// Latest local resource sample (CPU / RAM / network).
+///
+/// Returns `None` until the collector has produced its first sample
+/// (~1 interval after app boot).
+#[tauri::command]
+async fn get_metrics(state: State<'_, RuntimeState>) -> Result<Option<MetricsSample>, String> {
+    Ok(state.metrics.latest().await)
+}
+
+/// Recent metrics history, oldest first. Drives the dashboard charts.
+#[tauri::command]
+async fn get_metrics_history(state: State<'_, RuntimeState>) -> Result<Vec<MetricsSample>, String> {
+    Ok(state.metrics.history().await)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            app.manage(RuntimeState::default());
+            let state = RuntimeState::default();
+
+            // The metrics collector runs for the entire app lifetime so
+            // the dashboard always has fresh local CPU/RAM/network data,
+            // even when the user has the runtime stopped. We never need
+            // to stop it before exit because Tauri tears down the tokio
+            // runtime when the window closes.
+            let metrics = state.metrics.clone();
+            let collector_shutdown = Arc::new(AtomicBool::new(false));
+            tauri::async_runtime::spawn(async move {
+                run_collector(metrics, collector_shutdown, DEFAULT_INTERVAL).await;
+            });
+
+            app.manage(state);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -132,6 +165,8 @@ pub fn run() {
             stop_runtime,
             get_node_info,
             get_peers,
+            get_metrics,
+            get_metrics_history,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
