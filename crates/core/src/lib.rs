@@ -6,6 +6,7 @@
 //! runtime without duplicating wiring code.
 
 pub mod discovery;
+pub mod logging;
 pub mod metrics;
 pub mod models;
 pub mod networking;
@@ -19,6 +20,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use uuid::Uuid;
 
 use crate::discovery::mdns::start_discovery;
+use crate::logging::LogBus;
 use crate::networking::server::start_tcp_server;
 use crate::peers::PeerRegistry;
 use crate::tasks::task::{Task, TaskType};
@@ -46,10 +48,29 @@ pub enum RuntimeError {
 /// (Tauri commands, telemetry exporters, future CLI subcommands) can
 /// query the live peer list while the runtime drives writes from the
 /// discovery loop.
-pub async fn run(shutdown: Arc<AtomicBool>, peers: Arc<PeerRegistry>) -> Result<(), RuntimeError> {
+///
+/// `logs` is a shared sink for structured runtime events. Pass a fresh
+/// `LogBus::with_defaults()` when you don't need to consume the stream
+/// (e.g. the headless CLI).
+pub async fn run(
+    shutdown: Arc<AtomicBool>,
+    peers: Arc<PeerRegistry>,
+    logs: Arc<LogBus>,
+) -> Result<(), RuntimeError> {
     let node_id = Uuid::new_v4().to_string();
     let local_ip = local_ip_address::local_ip()?;
     let port = DEFAULT_PORT;
+
+    logs.info(
+        "runtime",
+        format!(
+            "Sangam runtime starting (node {}, listening on {}:{})",
+            short_id(&node_id),
+            local_ip,
+            port
+        ),
+    )
+    .await;
 
     let server_handle = tokio::spawn(start_tcp_server(port));
 
@@ -59,7 +80,18 @@ pub async fn run(shutdown: Arc<AtomicBool>, peers: Arc<PeerRegistry>) -> Result<
         numbers: vec![1, 2, 3, 4, 5],
     };
 
-    start_discovery(node_id, local_ip, port, shutdown.clone(), demo_task, peers).await;
+    start_discovery(
+        node_id,
+        local_ip,
+        port,
+        shutdown.clone(),
+        demo_task,
+        peers,
+        logs.clone(),
+    )
+    .await;
+
+    logs.info("runtime", "Sangam runtime shutting down").await;
 
     server_handle.abort();
     match server_handle.await {
@@ -67,6 +99,12 @@ pub async fn run(shutdown: Arc<AtomicBool>, peers: Arc<PeerRegistry>) -> Result<
         Err(e) if e.is_cancelled() => Ok(()),
         Err(e) => Err(RuntimeError::ServerJoin(e)),
     }
+}
+
+/// First 8 chars of a node UUID — short enough for log lines, still
+/// unique enough at typical mesh sizes.
+fn short_id(node_id: &str) -> &str {
+    node_id.get(..8).unwrap_or(node_id)
 }
 
 /// Convenience helper: spawn a Tokio task that flips `shutdown` on Ctrl-C.

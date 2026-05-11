@@ -5,6 +5,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::time::{Duration, sleep};
 
+use crate::logging::LogBus;
 use crate::networking::client::connect_to_node;
 use crate::peers::PeerRegistry;
 use crate::tasks::task::Task;
@@ -67,6 +68,7 @@ pub async fn start_discovery(
     shutdown: Arc<AtomicBool>,
     demo_task: Task,
     peers: Arc<PeerRegistry>,
+    logs: Arc<LogBus>,
 ) {
     let mdns = ServiceDaemon::new().expect("Failed to create mDNS daemon");
 
@@ -145,9 +147,15 @@ pub async fn start_discovery(
                     // Mirror every resolution into the peer registry so
                     // the UI sees the peer immediately, even if we've
                     // already kicked off a connection earlier this session.
+                    let mut newly_seen = false;
                     if let (Some(pid), Some(addr)) = (&peer_node_id, picked) {
                         let cpu_threads = extract_txt_number::<u32>(info.get_properties(), "cpu");
                         let ram_gib = extract_txt_number::<u64>(info.get_properties(), "ram_gib");
+                        // Track whether this is the first time we've seen
+                        // this peer in this session so we only emit one
+                        // "peer joined" log line per peer (re-resolutions
+                        // happen frequently and would spam the console).
+                        newly_seen = !connected_peers.contains(pid);
                         peers
                             .upsert(
                                 pid.clone(),
@@ -157,6 +165,20 @@ pub async fn start_discovery(
                                 ram_gib,
                             )
                             .await;
+                    }
+
+                    if newly_seen {
+                        logs.info(
+                            "discovery",
+                            format!(
+                                "Peer joined: {} ({})",
+                                info.get_fullname(),
+                                picked
+                                    .map(|a| a.to_string())
+                                    .unwrap_or_else(|| "unknown addr".to_string())
+                            ),
+                        )
+                        .await;
                     }
 
                     // De-dup: only kick off the demo connection once per
@@ -183,7 +205,9 @@ pub async fn start_discovery(
                         let task = demo_task.clone();
                         let msg = (target, node_id.clone(), task);
                         if tx.try_send(msg).is_err() {
-                            eprintln!("[discovery] Connection queue full — skipping peer for now");
+                            let warning = "Connection queue full — skipping peer for now";
+                            eprintln!("[discovery] {}", warning);
+                            logs.warn("discovery", warning).await;
                         }
                     }
 
@@ -211,7 +235,9 @@ pub async fn start_discovery(
                     if let Some(victim) = snapshot.iter().find(|p| p.name == fullname) {
                         peers.remove(&victim.id).await;
                         connected_peers.remove(&victim.id);
-                        println!("[discovery] Peer left: {}", fullname);
+                        let msg = format!("Peer left: {}", fullname);
+                        println!("[discovery] {}", msg);
+                        logs.info("discovery", msg).await;
                     }
                 }
                 _ => {}

@@ -7,15 +7,19 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use sangam_core::logging::{LogBus, LogEntry};
 use sangam_core::metrics::{
     DEFAULT_HISTORY_CAPACITY, DEFAULT_INTERVAL, MetricsSample, MetricsStore, run_collector,
 };
 use sangam_core::peers::{Peer, PeerRegistry};
 use sangam_core::{DEFAULT_PORT, run as run_runtime};
 use serde::Serialize;
-use tauri::{Manager, State};
+use tauri::{Emitter, Manager, State};
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
+
+/// Tauri event channel name the frontend subscribes to via `listen()`.
+const LOG_EVENT: &str = "sangam:log";
 
 /// Shared state Tauri keeps alive for the whole app lifetime.
 ///
@@ -29,6 +33,7 @@ struct RuntimeState {
     shutdown: Mutex<Option<Arc<AtomicBool>>>,
     peers: Arc<PeerRegistry>,
     metrics: Arc<MetricsStore>,
+    logs: Arc<LogBus>,
 }
 
 impl Default for RuntimeState {
@@ -38,6 +43,7 @@ impl Default for RuntimeState {
             shutdown: Mutex::new(None),
             peers: Arc::new(PeerRegistry::new()),
             metrics: Arc::new(MetricsStore::new(DEFAULT_HISTORY_CAPACITY)),
+            logs: Arc::new(LogBus::with_defaults()),
         }
     }
 }
@@ -64,11 +70,13 @@ async fn start_runtime(state: State<'_, RuntimeState>) -> Result<(), String> {
     let shutdown = Arc::new(AtomicBool::new(false));
     *state.shutdown.lock().await = Some(shutdown.clone());
 
-    // Hand the runtime our shared registry so the UI sees peers as they
-    // arrive without needing to plumb a separate channel.
+    // Hand the runtime our shared registry + log bus so the UI sees
+    // peers and structured events as they arrive without needing to
+    // plumb a separate channel for each.
     let peers = state.peers.clone();
+    let logs = state.logs.clone();
     let handle = tokio::spawn(async move {
-        if let Err(e) = run_runtime(shutdown, peers).await {
+        if let Err(e) = run_runtime(shutdown, peers, logs).await {
             eprintln!("[Sangam] runtime exited with error: {}", e);
         }
     });
@@ -139,6 +147,14 @@ async fn get_metrics_history(state: State<'_, RuntimeState>) -> Result<Vec<Metri
     Ok(state.metrics.history().await)
 }
 
+/// Backfill of recent log entries — used when the runtime console mounts
+/// so the user sees context, not an empty pane. Live updates after that
+/// arrive via the `sangam:log` Tauri event.
+#[tauri::command]
+async fn get_recent_logs(state: State<'_, RuntimeState>) -> Result<Vec<LogEntry>, String> {
+    Ok(state.logs.recent().await)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -157,6 +173,32 @@ pub fn run() {
                 run_collector(metrics, collector_shutdown, DEFAULT_INTERVAL).await;
             });
 
+            // Log bridge: subscribe to the bus *before* anyone starts
+            // emitting (i.e. before run_runtime is ever called) so we
+            // don't drop early entries. Each LogEntry gets emitted to
+            // the frontend as a `sangam:log` event; the UI's listen()
+            // call renders it into the runtime console.
+            let mut log_rx = state.logs.subscribe();
+            let log_app = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                use tokio::sync::broadcast::error::RecvError;
+                loop {
+                    match log_rx.recv().await {
+                        Ok(entry) => {
+                            // Emit failures (no listeners yet, etc.) are
+                            // expected at boot — silent.
+                            let _ = log_app.emit(LOG_EVENT, entry);
+                        }
+                        Err(RecvError::Lagged(_)) => {
+                            // Slow consumer — skip the gap. The frontend
+                            // can re-sync via get_recent_logs.
+                            continue;
+                        }
+                        Err(RecvError::Closed) => break,
+                    }
+                }
+            });
+
             app.manage(state);
             Ok(())
         })
@@ -167,6 +209,7 @@ pub fn run() {
             get_peers,
             get_metrics,
             get_metrics_history,
+            get_recent_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
