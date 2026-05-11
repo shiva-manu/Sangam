@@ -1,0 +1,24 @@
+{
+  "name": "sangam",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A wireless peer-to-peer distributed compute mesh.",
+  "license": "MIT",
+  "workspaces": [
+    "apps/desktop"
+  ],
+  "scripts": {
+    "desktop:dev": "npm run dev --workspace sangam-desktop",
+    "desktop:build": "npm run build --workspace sangam-desktop",
+    "desktop:preview": "npm run preview --workspace sangam-desktop",
+    "desktop:tauri": "npm run tauri --workspace sangam-desktop"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shiva-manu/Sangam.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shiva-manu/Sangam/issues"
+  },
+  "homepage": "https://github.com/shiva-manu/Sangam#readme"
+}

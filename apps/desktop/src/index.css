@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* -------------------------------------------------------------------------- */
+/* Sangam design tokens                                                        */
+/* -------------------------------------------------------------------------- */
+
+@layer base {
+  :root {
+    /* Backgrounds — deep space → near-black with subtle blue cast. */
+    --bg-base: 8 10 14;          /* page background */
+    --bg-surface: 14 17 23;      /* panel surface */
+    --bg-elevated: 20 24 32;     /* hover / elevated surface */
+
+    /* Borders / dividers — almost-white at low alpha to keep glass feel. */
+    --line: 255 255 255;         /* used with /10 etc. */
+
+    /* Ink — primary, secondary, tertiary text. */
+    --ink: 235 238 245;
+    --ink-muted: 156 163 175;
+    --ink-dim: 107 114 128;
+
+    /* Accents */
+    --accent-cyan: 56 189 248;     /* sky-400 */
+    --accent-violet: 167 139 250;  /* violet-400 */
+    --accent-green: 52 211 153;    /* emerald-400 */
+    --accent-amber: 251 191 36;    /* amber-400 */
+    --accent-red: 248 113 113;     /* red-400 */
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg-base text-ink antialiased;
+    font-feature-settings: "ss01", "cv01", "cv02", "cv11";
+    overflow: hidden;
+  }
+
+  /* Fixed-grain texture: gives "expensive infra dashboard" depth without
+     noise images. Subtle radial gradients pinned to viewport. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        ellipse 1200px 600px at 0% 0%,
+        rgb(56 189 248 / 0.04),
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 800px 600px at 100% 100%,
+        rgb(167 139 250 / 0.04),
+        transparent 60%
+      );
+    z-index: 0;
+  }
+
+  /* Modern scrollbars that match the dark theme. */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 0.06);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 0.12);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Utilities                                                                   */
+/* -------------------------------------------------------------------------- */
+
+@layer utilities {
+  /* Glass panel: the core surface of the app — used on cards, the sidebar,
+     the topbar, and any elevated container. */
+  .glass {
+    @apply relative bg-white/[0.02] backdrop-blur-xl;
+    @apply border border-white/[0.06];
+    @apply shadow-glow rounded-xl;
+  }
+
+  /* A subtle accent gradient border — apply in addition to .glass when the
+     element should "hum". Achieved with a layered ::before. */
+  .glass-accent {
+    @apply relative;
+  }
+  .glass-accent::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      rgb(56 189 248 / 0.4),
+      transparent 30%,
+      transparent 70%,
+      rgb(167 139 250 / 0.3)
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Live status dot — green/amber/red etc. The pulse halo is a separate
+     pseudo-element so we can tone it down without affecting the dot. */
+  .status-dot {
+    @apply relative inline-block w-2 h-2 rounded-full;
+  }
+  .status-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: currentColor;
+    opacity: 0.5;
+    animation: pingSoft 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  /* Compact monospace label used for IPs, IDs, ports, etc. */
+  .mono-tag {
+    @apply font-mono text-[11px] tracking-wider uppercase text-ink-muted;
+  }
+
+  /* Grid backdrop — blueprint pattern for the mesh visualization area. */
+  .grid-backdrop {
+    background-image:
+      linear-gradient(rgb(255 255 255 / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}
