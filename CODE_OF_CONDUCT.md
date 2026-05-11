@@ -1,45 +1,105 @@
 # Code of Conduct
 
-## Our pledge
+## Purpose
 
-We as members, contributors, and maintainers pledge to make participation in Sangam a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, caste, color, religion, or sexual identity and orientation.
+Sangam is an early-stage distributed systems project. We want the community to
+be useful, rigorous, and welcoming for people who are learning, experimenting,
+reviewing, designing, and contributing code.
 
-We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy community.
+This Code of Conduct sets expectations for participation in project spaces and
+explains how maintainers will respond when those expectations are not met.
 
-## Our standards
+## Our Pledge
+
+We pledge to make participation in Sangam a harassment-free experience for
+everyone, regardless of age, body size, visible or invisible disability,
+ethnicity, sex characteristics, gender identity and expression, level of
+experience, education, socio-economic status, nationality, personal appearance,
+race, caste, color, religion, or sexual identity and orientation.
+
+We pledge to act and interact in ways that contribute to an open, welcoming,
+diverse, inclusive, and healthy community.
+
+## Expected Behavior
 
 Examples of behavior that contributes to a positive environment include:
 
-- Demonstrating empathy and kindness toward other people
-- Being respectful of differing opinions, viewpoints, and experiences
-- Giving and gracefully accepting constructive feedback
-- Accepting responsibility and apologizing to those affected by our mistakes
-- Focusing on what is best not just for us as individuals, but for the overall community
+- Showing empathy, patience, and kindness toward other people.
+- Respecting different opinions, constraints, backgrounds, and experiences.
+- Giving constructive feedback that focuses on the work, not the person.
+- Accepting responsibility, correcting mistakes, and apologizing when needed.
+- Asking clarifying questions before assuming bad intent.
+- Helping keep discussions focused, useful, and accessible to future readers.
+
+## Unacceptable Behavior
 
 Examples of unacceptable behavior include:
 
-- The use of sexualized language or imagery, and sexual attention or advances of any kind
-- Trolling, insulting or derogatory comments, and personal or political attacks
-- Public or private harassment
-- Publishing others' private information, such as a physical or email address, without explicit permission
-- Other conduct which could reasonably be considered inappropriate in a professional setting
-
-## Enforcement responsibilities
-
-Project maintainers are responsible for clarifying and enforcing standards of acceptable behavior and will take appropriate and fair corrective action in response to any behavior that they deem inappropriate, threatening, offensive, or harmful.
-
-Project maintainers have the right and responsibility to remove, edit, or reject comments, commits, code, issues, pull requests, and other contributions that are not aligned with this Code of Conduct.
+- Harassment, intimidation, stalking, or sustained disruption.
+- Sexualized language or imagery, sexual attention, or sexual advances.
+- Insults, derogatory comments, slurs, personal attacks, or political attacks.
+- Publishing private information without explicit permission.
+- Dismissing, mocking, or targeting people based on identity or background.
+- Deliberately derailing issues, pull requests, discussions, or reviews.
+- Any conduct that would reasonably be considered inappropriate in a
+  professional open source setting.
 
 ## Scope
 
-This Code of Conduct applies within all project spaces and also applies when an individual is officially representing the project in public spaces.
+This Code of Conduct applies in all Sangam project spaces, including issues,
+pull requests, discussions, code review, documentation, community chats, events,
+and private maintainer communications related to the project.
 
-## Enforcement
+It also applies when someone is officially representing Sangam in public spaces.
+Examples include using an official project account, presenting on behalf of the
+project, or acting as an appointed maintainer.
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by opening a private security advisory or contacting the maintainers through the repository owner profile.
+## Reporting
 
-All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be
+reported by using GitHub private security advisories when available, or by
+contacting the repository maintainers through the repository owner profile.
+
+Reports should include as much context as you are comfortable sharing:
+
+- What happened.
+- Where it happened.
+- When it happened.
+- Who was involved.
+- Screenshots, links, or logs if available.
+- Whether there is an immediate safety concern.
+
+Maintainers will respect the privacy and safety of reporters as much as
+possible. Retaliation against anyone who reports a concern or participates in an
+investigation is not tolerated.
+
+## Enforcement Responsibilities
+
+Project maintainers are responsible for clarifying and enforcing standards of
+acceptable behavior. They may remove, edit, or reject comments, commits, code,
+issues, pull requests, and other contributions that do not align with this Code
+of Conduct.
+
+Maintainers who receive a report will review it promptly and fairly. When
+appropriate, maintainers may ask for additional information, consult other
+maintainers, and take temporary action while reviewing the situation.
+
+## Enforcement Actions
+
+Depending on the severity and pattern of behavior, maintainers may take one or
+more of the following actions:
+
+1. Private clarification or correction.
+2. Public or private warning.
+3. Comment deletion, issue locking, or pull request moderation.
+4. Temporary restriction from project spaces.
+5. Permanent removal from project spaces.
+6. Escalation to platform moderators or appropriate authorities when required.
+
+Enforcement decisions should be proportionate, documented for maintainers, and
+focused on protecting the community and the project.
 
 ## Attribution
 
-This Code of Conduct is adapted from the Contributor Covenant, version 2.1.
+This Code of Conduct is adapted from the Contributor Covenant, version 2.1, and
+tailored for the Sangam project.

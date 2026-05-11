@@ -19,3 +19,14 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Additional notes:
+
+- This license applies to original Sangam source code and documentation in this
+  repository.
+- Third-party dependencies, tools, icons, fonts, and generated assets remain
+  under their respective licenses.
+- Contributions are accepted under the same MIT License unless explicitly
+  stated otherwise.
