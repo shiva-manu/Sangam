@@ -191,7 +191,7 @@ impl TaskTracker {
     pub async fn list(&self) -> Vec<TaskRecord> {
         let inner = self.inner.read().await;
         let mut out: Vec<TaskRecord> = inner.values().cloned().collect();
-        out.sort_by(|a, b| b.created_at_ms.cmp(&a.created_at_ms));
+        out.sort_by_key(|r| std::cmp::Reverse(r.created_at_ms));
         out
     }
 
