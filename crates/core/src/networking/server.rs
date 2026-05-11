@@ -1,12 +1,15 @@
+use std::sync::Arc;
+
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 
 use crate::models::message::{MessageType, NodeMessage};
 use crate::tasks::executor::execute_task;
+use crate::tasks::tracker::TaskTracker;
 
 /// Bind a TCP listener and spawn a connection handler per accepted socket.
 /// This function never returns under normal operation.
-pub async fn start_tcp_server(port: u16) {
+pub async fn start_tcp_server(port: u16, tracker: Arc<TaskTracker>) {
     let listener = TcpListener::bind(format!("0.0.0.0:{}", port))
         .await
         .expect("Failed to start TCP server");
@@ -16,7 +19,10 @@ pub async fn start_tcp_server(port: u16) {
         match listener.accept().await {
             Ok((socket, addr)) => {
                 println!("Incoming connection from {}\n", addr);
-                tokio::spawn(handle_connection(socket));
+                let t = tracker.clone();
+                tokio::spawn(async move {
+                    handle_connection(socket, t).await;
+                });
             }
             Err(e) => {
                 eprintln!("Failed to accept connection: {}", e);
@@ -29,7 +35,7 @@ pub async fn start_tcp_server(port: u16) {
 /// `NodeMessage`, dispatch on its variant, and (for `Task`) write a
 /// newline-delimited `Result` response back. Extracted from
 /// `start_tcp_server` so it can be exercised by integration tests.
-pub async fn handle_connection(socket: TcpStream) {
+pub async fn handle_connection(socket: TcpStream, tracker: Arc<TaskTracker>) {
     let (read_half, mut write_half) = socket.into_split();
     let mut reader = BufReader::new(read_half);
     let mut line = String::new();
@@ -98,7 +104,29 @@ pub async fn handle_connection(socket: TcpStream) {
         MessageType::Task(task) => {
             println!("\nExecuting Task: {:?}\n", task);
 
+            // Inbound lifecycle: record on receipt (Queued), advance to
+            // Running before the executor call, then Completed/Failed
+            // based on what the executor reports.
+            let task_id = task.task_id.clone();
+            let task_type_label = format!("{:?}", task.task_type);
+            let owner = Some(message.node_id.clone());
+            tracker
+                .record_inbound(&task_id, &task_type_label, owner)
+                .await;
+            tracker.mark_running(&task_id).await;
+
             let result = execute_task(task);
+
+            // Reflect the executor's verdict in the tracker before we
+            // send anything on the wire — guarantees the dashboard sees
+            // a consistent state even if the response write fails.
+            if result.status == "completed" {
+                tracker.mark_completed(&task_id, result.result.into()).await;
+            } else {
+                tracker
+                    .mark_failed(&task_id, format!("executor status: {}", result.status))
+                    .await;
+            }
 
             let response = NodeMessage {
                 node_id: message.node_id.clone(),

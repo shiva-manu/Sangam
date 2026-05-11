@@ -24,6 +24,7 @@ use crate::logging::LogBus;
 use crate::networking::server::start_tcp_server;
 use crate::peers::PeerRegistry;
 use crate::tasks::task::{Task, TaskType};
+use crate::tasks::tracker::TaskTracker;
 
 /// Default TCP port the runtime listens on for peer messages.
 pub const DEFAULT_PORT: u16 = 8080;
@@ -52,10 +53,15 @@ pub enum RuntimeError {
 /// `logs` is a shared sink for structured runtime events. Pass a fresh
 /// `LogBus::with_defaults()` when you don't need to consume the stream
 /// (e.g. the headless CLI).
+///
+/// `tasks` is a shared lifecycle tracker for every task that flows
+/// through the runtime — both the ones we send and the ones peers send
+/// to us. The dashboard reads from it via `get_tasks`.
 pub async fn run(
     shutdown: Arc<AtomicBool>,
     peers: Arc<PeerRegistry>,
     logs: Arc<LogBus>,
+    tasks: Arc<TaskTracker>,
 ) -> Result<(), RuntimeError> {
     let node_id = Uuid::new_v4().to_string();
     let local_ip = local_ip_address::local_ip()?;
@@ -72,7 +78,7 @@ pub async fn run(
     )
     .await;
 
-    let server_handle = tokio::spawn(start_tcp_server(port));
+    let server_handle = tokio::spawn(start_tcp_server(port, tasks.clone()));
 
     let demo_task = Task {
         task_id: "demo-sum-001".to_string(),
@@ -88,6 +94,7 @@ pub async fn run(
         demo_task,
         peers,
         logs.clone(),
+        tasks,
     )
     .await;
 

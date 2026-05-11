@@ -9,6 +9,7 @@ use crate::logging::LogBus;
 use crate::networking::client::connect_to_node;
 use crate::peers::PeerRegistry;
 use crate::tasks::task::Task;
+use crate::tasks::tracker::TaskTracker;
 use crate::utils::sysinfo::NodeSpecs;
 
 /// Service type advertised on the local network. Public so tests / other
@@ -61,6 +62,12 @@ where
         .or_else(|| addresses.into_iter().next())
 }
 
+// `start_discovery` is the top-level orchestration entry for the
+// discovery loop; every parameter here is independently needed and the
+// function has exactly one caller (`run()` in lib.rs), so the value of
+// bundling them into a context struct is low. Suppressing the lint is
+// the honest choice.
+#[allow(clippy::too_many_arguments)]
 pub async fn start_discovery(
     node_id: String,
     local_ip: IpAddr,
@@ -69,6 +76,7 @@ pub async fn start_discovery(
     demo_task: Task,
     peers: Arc<PeerRegistry>,
     logs: Arc<LogBus>,
+    tracker: Arc<TaskTracker>,
 ) {
     let mdns = ServiceDaemon::new().expect("Failed to create mDNS daemon");
 
@@ -115,13 +123,16 @@ pub async fn start_discovery(
     // hammer the same peer every time mDNS re-resolves it.
     let mut connected_peers: HashSet<String> = HashSet::new();
 
-    // Channel carries (target_addr, node_id, task).
-    let (tx, mut rx) = tokio::sync::mpsc::channel::<(String, String, Task)>(5);
+    // Channel carries (target_addr, our_node_id, task, peer_node_id).
+    // peer_node_id is what the tracker stamps as the "worker" for the
+    // outbound record, so the dashboard can show "task X ran on peer Y".
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<(String, String, Task, Option<String>)>(5);
 
     // Spawn a bounded worker that connects to discovered peers.
+    let worker_tracker = tracker.clone();
     let worker_handle = tokio::spawn(async move {
-        while let Some((target, node_id, task)) = rx.recv().await {
-            connect_to_node(target, node_id, task).await;
+        while let Some((target, our_node_id, task, peer_id)) = rx.recv().await {
+            connect_to_node(target, our_node_id, task, peer_id, worker_tracker.clone()).await;
         }
     });
 
@@ -199,11 +210,26 @@ pub async fn start_discovery(
                         println!("IP   : {}", addr);
                         let target = format!("{}:{}", addr, info.get_port());
 
+                        // Mint a fresh task_id per send so the tracker can
+                        // distinguish "demo task to peer A" from "demo
+                        // task to peer B" — they share base behaviour but
+                        // are independent lifecycle records.
+                        let task = Task {
+                            task_id: format!(
+                                "{}-{}",
+                                demo_task.task_id,
+                                peer_node_id
+                                    .as_deref()
+                                    .map(|p| &p[..p.len().min(8)])
+                                    .unwrap_or("anon")
+                            ),
+                            ..demo_task.clone()
+                        };
+
                         // Send to bounded channel; if the channel is full this
                         // will back-pressure discovery rather than spawn
                         // unbounded tasks.
-                        let task = demo_task.clone();
-                        let msg = (target, node_id.clone(), task);
+                        let msg = (target, node_id.clone(), task, peer_node_id.clone());
                         if tx.try_send(msg).is_err() {
                             let warning = "Connection queue full — skipping peer for now";
                             eprintln!("[discovery] {}", warning);

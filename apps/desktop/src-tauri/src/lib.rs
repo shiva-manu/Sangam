@@ -12,6 +12,7 @@ use sangam_core::metrics::{
     DEFAULT_HISTORY_CAPACITY, DEFAULT_INTERVAL, MetricsSample, MetricsStore, run_collector,
 };
 use sangam_core::peers::{Peer, PeerRegistry};
+use sangam_core::tasks::tracker::{StatusCounts, TaskRecord, TaskTracker};
 use sangam_core::{DEFAULT_PORT, run as run_runtime};
 use serde::Serialize;
 use tauri::{Emitter, Manager, State};
@@ -34,6 +35,7 @@ struct RuntimeState {
     peers: Arc<PeerRegistry>,
     metrics: Arc<MetricsStore>,
     logs: Arc<LogBus>,
+    tasks: Arc<TaskTracker>,
 }
 
 impl Default for RuntimeState {
@@ -44,6 +46,7 @@ impl Default for RuntimeState {
             peers: Arc::new(PeerRegistry::new()),
             metrics: Arc::new(MetricsStore::new(DEFAULT_HISTORY_CAPACITY)),
             logs: Arc::new(LogBus::with_defaults()),
+            tasks: Arc::new(TaskTracker::new()),
         }
     }
 }
@@ -70,13 +73,14 @@ async fn start_runtime(state: State<'_, RuntimeState>) -> Result<(), String> {
     let shutdown = Arc::new(AtomicBool::new(false));
     *state.shutdown.lock().await = Some(shutdown.clone());
 
-    // Hand the runtime our shared registry + log bus so the UI sees
-    // peers and structured events as they arrive without needing to
-    // plumb a separate channel for each.
+    // Hand the runtime our shared registry, log bus, and task tracker
+    // so the UI sees peers, structured events, and task lifecycles as
+    // they arrive without needing to plumb a separate channel for each.
     let peers = state.peers.clone();
     let logs = state.logs.clone();
+    let tasks = state.tasks.clone();
     let handle = tokio::spawn(async move {
-        if let Err(e) = run_runtime(shutdown, peers, logs).await {
+        if let Err(e) = run_runtime(shutdown, peers, logs, tasks).await {
             eprintln!("[Sangam] runtime exited with error: {}", e);
         }
     });
@@ -155,6 +159,20 @@ async fn get_recent_logs(state: State<'_, RuntimeState>) -> Result<Vec<LogEntry>
     Ok(state.logs.recent().await)
 }
 
+/// All tracked tasks (inbound + outbound), most recent first. Drives
+/// the dashboard's task list.
+#[tauri::command]
+async fn get_tasks(state: State<'_, RuntimeState>) -> Result<Vec<TaskRecord>, String> {
+    Ok(state.tasks.list().await)
+}
+
+/// Per-status histogram of all tracked tasks. Drives the dashboard's
+/// status pill counters (queued / running / completed / failed).
+#[tauri::command]
+async fn get_task_status_counts(state: State<'_, RuntimeState>) -> Result<StatusCounts, String> {
+    Ok(state.tasks.status_counts().await)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -210,6 +228,8 @@ pub fn run() {
             get_metrics,
             get_metrics_history,
             get_recent_logs,
+            get_tasks,
+            get_task_status_counts,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
