@@ -1,7 +1,12 @@
+/**
+ * @fileoverview Analytics page for resource and task trends.
+ *
+ * This page will grow to include cross-peer aggregations and historical roll-ups;
+ * for now it wraps `ResourceGraphs` as the dedicated graph-focused route.
+ */
 import { ResourceGraphs } from "../components/dashboard/ResourceGraphs";
 
-/// Analytics page — resource graphs. Will grow once we add historical
-/// roll-ups and cross-peer aggregations.
+/** Analytics page — currently resource graphs, later historical mesh analytics. */
 export function Analytics() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">

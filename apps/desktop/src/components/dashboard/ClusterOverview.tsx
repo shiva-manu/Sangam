@@ -1,3 +1,9 @@
+/**
+ * @fileoverview High-level cluster capacity and health summary cards.
+ *
+ * This panel turns live peer, metrics, and task-count data into compact
+ * aggregate indicators for the dashboard's headline row.
+ */
 import { motion } from "framer-motion";
 import {
   Activity,
@@ -16,31 +22,29 @@ import { cn } from "../../lib/cn";
 import { formatMib } from "../../lib/format";
 import type { LucideIcon } from "lucide-react";
 
-/// Section 1 — Cluster Overview.
-///
-/// Six high-density stat cards that animate in on mount and update live.
-/// Each card carries a tiny accent gradient (different per metric) so
-/// the row reads like a "row of instruments" rather than a uniform grid.
+/**
+ * Section 1 — Cluster Overview.
+ *
+ * Six high-density stat cards animate in on mount and update live.  Each card
+ * carries a tiny accent gradient so the row reads like a set of instruments
+ * rather than a uniform grid of numbers.
+ */
 export function ClusterOverview() {
   const { data: peers } = usePeers();
   const { data: metrics } = useMetrics();
   const { data: counts } = useStatusCounts();
 
-  // Aggregate across known peers + self. CPU threads come from the TXT
-  // properties advertised in mDNS; absent = 0 contribution.
+  // Aggregate computations include known peers plus this device. `totalNodes`
+  // adds self; CPU threads and RAM come from optional mDNS TXT properties, so
+  // missing values contribute 0 rather than implying live telemetry.
   const totalNodes = peers.length + 1;
   const activeWorkers = peers.length; // peers are "workers" we can dispatch to
-  const totalThreads = peers.reduce(
-    (acc, p) => acc + (p.cpu_threads ?? 0),
-    0,
-  );
-  const totalRamMb = peers.reduce(
-    (acc, p) => acc + (p.ram_gib ?? 0) * 1024,
-    0,
-  );
+  const totalThreads = peers.reduce((acc, p) => acc + (p.cpu_threads ?? 0), 0);
+  const totalRamMb = peers.reduce((acc, p) => acc + (p.ram_gib ?? 0) * 1024, 0);
 
-  // "Network latency" — for now, peer freshness as a proxy. Distance from
-  // "just seen" gives a real-time feel without faking values.
+  // `avgFreshnessMs` is labelled as latency but is really a heartbeat-age
+  // proxy. It tells users how fresh peer discovery is without inventing RTT
+  // measurements we do not yet collect.
   const now = Date.now();
   const avgFreshnessMs =
     peers.length === 0
@@ -89,9 +93,7 @@ export function ClusterOverview() {
         icon={Radio}
         label="Latency"
         value={
-          peers.length === 0
-            ? "—"
-            : `${Math.round(avgFreshnessMs / 1000)}s`
+          peers.length === 0 ? "—" : `${Math.round(avgFreshnessMs / 1000)}s`
         }
         sub="peer freshness"
         tone="cyan"
@@ -105,7 +107,8 @@ export function ClusterOverview() {
         tone="violet"
         pulse={runningTasks > 0}
       />
-      {/* Footer signal: CPU heartbeat across the row. Hidden if no metrics. */}
+      {/* CpuHeartbeat: a decorative pressure strip across the row. Hidden when
+          the runtime has not produced metrics yet. */}
       {metrics && (
         <div className="col-span-full">
           <CpuHeartbeat cpuPct={metrics.cpu_pct} />
@@ -115,6 +118,8 @@ export function ClusterOverview() {
   );
 }
 
+// Visual tokens for each stat tone: background bloom (`glow`), icon colour,
+// and card ring tint. Keeping them mapped here makes new tones easy to audit.
 const toneStyles: Record<
   "cyan" | "violet" | "green" | "amber",
   { glow: string; icon: string; ring: string }
@@ -185,12 +190,7 @@ function StatCard({
         <span className="text-[10px] uppercase tracking-wider text-ink-dim font-medium">
           {label}
         </span>
-        <div
-          className={cn(
-            "p-1.5 rounded-md bg-white/[0.03] border",
-            t.ring,
-          )}
-        >
+        <div className={cn("p-1.5 rounded-md bg-white/[0.03] border", t.ring)}>
           <Icon className={cn("w-3.5 h-3.5", t.icon)} strokeWidth={2} />
         </div>
       </div>
@@ -212,8 +212,12 @@ function StatCard({
   );
 }
 
-/// A slim horizontal bar that pulses with CPU pressure. Decorative —
-/// gives the row a sense of "the cluster is breathing".
+/**
+ * Slim horizontal bar that pulses with CPU pressure.
+ *
+ * Decorative only — it gives the overview row a sense that the cluster is
+ * "breathing" without adding another numeric metric.
+ */
 function CpuHeartbeat({ cpuPct }: { cpuPct: number }) {
   const pct = Math.min(100, Math.max(0, cpuPct));
   return (

@@ -1,6 +1,12 @@
+/**
+ * @fileoverview Full-width task queue page.
+ *
+ * Surfaces `TaskQueue` for operators monitoring distributed task throughput,
+ * lifecycle transitions, and peer assignment details.
+ */
 import { TaskQueue } from "../components/dashboard/TaskQueue";
 
-/// Tasks page — full-width task queue.
+/** Tasks page — full-width task queue for operator throughput monitoring. */
 export function Tasks() {
   return (
     <div className="max-w-[1200px] mx-auto space-y-6">

@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Live mesh topology visualization for local Sangam peers.
+ *
+ * The component renders this node at the centre, discovered peers around it,
+ * and animated packet dots over SVG links to suggest local-first P2P traffic.
+ */
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Activity, Wifi } from "lucide-react";
@@ -6,23 +12,23 @@ import { Badge } from "../ui/Badge";
 import { useNodeInfo, usePeers } from "../../hooks/use-runtime-data";
 import { shortId } from "../../lib/format";
 
-/// Section 2 — Live Node Mesh Visualization.
-///
-/// Center node = this device. Peers orbit around it in a circle. Lines
-/// show the active links; an animated dot travels along each line to
-/// suggest packet flow. Node colour reflects freshness:
-///   * green  — seen <5s ago (healthy)
-///   * amber  — seen <15s ago (busy / late ping)
-///   * red    — seen ≥15s ago (likely gone)
-///
-/// SVG-based so it scales crisply and animations are GPU-accelerated.
+/**
+ * Section 2 — Live Node Mesh Visualization.
+ *
+ * Center node = this device. Peers orbit around it in a circle. Lines show
+ * active links; animated dots travel along each line to suggest packet flow.
+ * Node colour reflects freshness (green <5 s, amber <15 s, red ≥15 s).
+ *
+ * SVG-based so it scales crisply and animations remain lightweight.
+ */
 export function MeshVisualization() {
   const { data: info } = useNodeInfo();
   const { data: peers } = usePeers();
 
   // Layout: position each peer evenly on a circle around the centre.
-  // Stable order (by id) so the same peer always lands in the same slot
-  // across re-renders — avoids "flicker reshuffling" as peers update.
+  // Stable order (by id) keeps peers in the same visual slot across updates.
+  // The -90° offset starts the first peer at the top; a single peer uses -75°
+  // so its link is slightly off-axis instead of dead vertical.
   const layout = useMemo(() => {
     const sorted = [...peers].sort((a, b) => a.id.localeCompare(b.id));
     const N = sorted.length;
@@ -71,7 +77,11 @@ export function MeshVisualization() {
           <linearGradient id="link-gradient" x1="0" x2="1" y1="0" y2="0">
             <stop offset="0%" stopColor="rgb(56 189 248)" stopOpacity="0.0" />
             <stop offset="50%" stopColor="rgb(56 189 248)" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="rgb(167 139 250)" stopOpacity="0.0" />
+            <stop
+              offset="100%"
+              stopColor="rgb(167 139 250)"
+              stopOpacity="0.0"
+            />
           </linearGradient>
           {/* Glow filter for active nodes */}
           <filter id="node-glow" x="-50%" y="-50%" width="200%" height="200%">
@@ -92,8 +102,8 @@ export function MeshVisualization() {
                 stroke="url(#link-gradient)"
                 strokeWidth={0.25}
               />
-              {/* Animated packet: a small circle that travels along the link.
-                  Two waves offset by 50% so flow looks continuous. */}
+              {/* PacketDot: two offset waves (one each direction) make flow
+                  appear continuous instead of a single repeating blip. */}
               <PacketDot x1={50} y1={50} x2={x} y2={y} delay={0} />
               <PacketDot x1={x} y1={y} x2={50} y2={50} delay={1.2} />
               {/* Node */}
@@ -159,12 +169,17 @@ export function MeshVisualization() {
         </g>
       </svg>
 
-      {/* HTML overlay labels — anchored over the SVG coords using % positions.
-          Done with absolute-positioned divs so we get crisp text and easy
-          truncation, not SVG <text>. */}
+      {/* NodeLabel uses HTML divs over SVG <text> so labels stay crisp, can be
+          truncated with CSS, and can use normal Tailwind typography utilities. */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Self label */}
-        <NodeLabel x={50} y={50} title="this node" subtitle={info.local_ip} isSelf />
+        <NodeLabel
+          x={50}
+          y={50}
+          title="this node"
+          subtitle={info.local_ip}
+          isSelf
+        />
         {layout.map(({ peer, x, y }) => (
           <NodeLabel
             key={peer.id}
@@ -198,6 +213,8 @@ export function MeshVisualization() {
   );
 }
 
+// Freshness buckets: <5 s is healthy, <15 s is late/busy, and ≥15 s is stale.
+// The thresholds match the legend and intentionally avoid pretending we have RTT.
 function freshness(lastSeenMs: number): { fill: string; tone: string } {
   const age = Date.now() - lastSeenMs;
   if (age < 5000) return { fill: "rgb(52 211 153)", tone: "green" };
@@ -205,6 +222,8 @@ function freshness(lastSeenMs: number): { fill: string; tone: string } {
   return { fill: "rgb(248 113 113)", tone: "red" };
 }
 
+// Animated traffic marker. Multiple PacketDots per link with staggered delays
+// create a continuous-flow illusion without needing path interpolation logic.
 function PacketDot({
   x1,
   y1,
@@ -245,6 +264,7 @@ function PacketDot({
   );
 }
 
+// HTML label anchored to an SVG coordinate via percentage positioning.
 function NodeLabel({
   x,
   y,

@@ -1,7 +1,17 @@
+/**
+ * @fileoverview Styled toggle switch built on Radix UI's Switch primitive.
+ *
+ * Used by settings controls that need an on/off state while preserving Radix's
+ * accessibility and keyboard behaviour.
+ */
 import * as SwitchPrimitive from "@radix-ui/react-switch";
 import { forwardRef, type ComponentPropsWithoutRef } from "react";
 import { cn } from "../../lib/cn";
 
+/**
+ * Sangam-styled switch using the same accent-cyan design tokens as buttons,
+ * inputs, and sliders so the Settings page reads as one cohesive control set.
+ */
 export const Switch = forwardRef<
   HTMLButtonElement,
   ComponentPropsWithoutRef<typeof SwitchPrimitive.Root>

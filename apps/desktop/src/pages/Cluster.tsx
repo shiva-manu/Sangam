@@ -1,7 +1,13 @@
+/**
+ * @fileoverview Focused cluster topology page.
+ *
+ * Reuses `ClusterOverview` and `MeshVisualization` for operators who want a
+ * topology/capacity view without task, log, or chart panels competing for space.
+ */
 import { ClusterOverview } from "../components/dashboard/ClusterOverview";
 import { MeshVisualization } from "../components/dashboard/MeshVisualization";
 
-/// Cluster page — same data as Dashboard but focused on topology + totals.
+/** Cluster page — same data as Dashboard but focused on topology + totals. */
 export function Cluster() {
   return (
     <div className="max-w-[1600px] mx-auto space-y-6">

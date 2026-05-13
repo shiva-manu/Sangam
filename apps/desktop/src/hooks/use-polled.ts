@@ -1,11 +1,31 @@
+/**
+ * @fileoverview Generic polling hook for React components.
+ *
+ * `usePolled` centralises the dashboard's "fetch immediately, then refresh on
+ * an interval" behaviour.  It is intentionally UI-safe: failures become
+ * component state instead of thrown errors, so one unhealthy data source does
+ * not unmount the whole panel tree.
+ */
 import { useEffect, useRef, useState } from "react";
 
-/// Generic polling hook: calls `fn` immediately and then every `interval` ms.
-/// Cleans up on unmount and pauses cleanly across re-renders by always
-/// closing over the latest `fn` via a ref.
-///
-/// Errors are surfaced as state, never thrown — the dashboard can show a
-/// muted indicator without crashing the panel.
+/**
+ * Polls an asynchronous function on mount and at a fixed interval.
+ *
+ * The hook calls `fn` once immediately after mount, then again every
+ * `intervalMs` milliseconds.  Errors are stored in state rather than thrown,
+ * allowing callers to render a muted or retry state without crashing React.
+ *
+ * @typeParam T - The resolved data type returned by `fn`.
+ * @param fn - Async producer that fetches the latest value.  The latest
+ *   function reference is always used, even if the interval was created by an
+ *   earlier render.
+ * @param intervalMs - Polling interval in milliseconds.
+ * @param initial - Initial value returned before the first successful poll.
+ * @returns An object containing:
+ *   - `data`: the latest successfully fetched value.
+ *   - `error`: the last error string, or `null` after a successful refresh.
+ *   - `refresh`: an imperative refresh function callers can invoke on demand.
+ */
 export function usePolled<T>(
   fn: () => Promise<T>,
   intervalMs: number,
@@ -13,8 +33,8 @@ export function usePolled<T>(
 ): { data: T; error: string | null; refresh: () => Promise<void> } {
   const [data, setData] = useState<T>(initial);
   const [error, setError] = useState<string | null>(null);
-  // Hold the latest `fn` so the interval timer always calls the freshest
-  // closure, without resetting the timer when callers pass new functions.
+  // Ref-mirror the fetcher to avoid stale closures inside the interval.
+  // This lets callers pass a new `fn` without tearing down/recreating the timer.
   const fnRef = useRef(fn);
   fnRef.current = fn;
 
@@ -29,6 +49,7 @@ export function usePolled<T>(
   };
 
   useEffect(() => {
+    // Guards the initial async fetch so it cannot set state after unmount.
     let cancelled = false;
     void (async () => {
       try {

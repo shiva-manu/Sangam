@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Live task queue panel for distributed compute work.
+ *
+ * Shows outbound and inbound task records, their lifecycle state, peer context,
+ * and compact progress indicators for operators monitoring throughput.
+ */
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowDownLeft,
@@ -15,17 +21,19 @@ import { formatRelativeTime, shortId } from "../../lib/format";
 import { cn } from "../../lib/cn";
 import type { TaskRecord, TaskStatus } from "../../lib/types";
 
-/// Section 4 — Task Execution Queue.
-///
-/// Header carries status pills (queued / running / completed / failed).
-/// Body is a scrollable list of TaskRecord rows. Each row shows
-/// direction, peer, age, and a progress bar (Queued → Running → Done).
+/**
+ * Section 4 — Task Execution Queue.
+ *
+ * Header carries status pills (queued / running / completed / failed).  The
+ * scrollable body shows `TaskRecord` rows with direction, peer, age, and a
+ * state-coloured progress bar.
+ */
 export function TaskQueue() {
   const { data: counts } = useStatusCounts();
   const { data: tasks } = useTasks();
 
-  // Show the freshest 20 so the list stays scannable. The full set is
-  // still in the tracker; this is just a viewport-friendly cap.
+  // Cap visible rows at the freshest 20 so the panel remains scannable and
+  // animations stay cheap. The full task set still lives in the tracker.
   const visible = tasks.slice(0, 20);
 
   return (
@@ -116,6 +124,8 @@ function Pill({
   );
 }
 
+// Task-state metadata. Progress percentages are intentionally illustrative:
+// queued starts at 10%, running sits at 60%, and both terminal states fill 100%.
 const statusMeta: Record<
   TaskStatus,
   {
@@ -151,6 +161,8 @@ const statusMeta: Record<
   },
 };
 
+// Row layout: direction badge, task identity/meta, status chip, then a thin
+// progress bar whose colour reflects success, failure, or in-flight work.
 function TaskRow({ task }: { task: TaskRecord }) {
   const meta = statusMeta[task.status];
   const isOutbound = task.direction === "outbound";
@@ -223,7 +235,8 @@ function TaskRow({ task }: { task: TaskRecord }) {
         </Badge>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar colour logic: red for failed, green for completed, and
+          cyan→violet gradient for queued/running in-flight states. */}
       <div className="mt-2 h-0.5 rounded-full overflow-hidden bg-white/[0.04]">
         <motion.div
           className={cn(

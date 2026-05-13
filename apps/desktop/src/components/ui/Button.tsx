@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Action button primitive for runtime controls and UI actions.
+ *
+ * Used for Start/Stop controls in the top bar and secondary actions throughout
+ * the desktop UI.
+ */
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/cn";
@@ -29,10 +35,9 @@ const buttonStyles = cva(
           "hover:bg-accent-red/15 hover:border-accent-red/50",
         ].join(" "),
         // Ghost: minimal, used for cancel-ish actions.
-        ghost: [
-          "text-ink-muted",
-          "hover:bg-white/[0.04] hover:text-ink",
-        ].join(" "),
+        ghost: ["text-ink-muted", "hover:bg-white/[0.04] hover:text-ink"].join(
+          " ",
+        ),
         // Outline: defined edge but transparent fill.
         outline: [
           "bg-transparent text-ink",
@@ -51,8 +56,18 @@ const buttonStyles = cva(
   },
 );
 
+/**
+ * Props for the `Button` primitive.
+ *
+ * Variants communicate intent:
+ * - `primary` — affirmative actions such as Start.
+ * - `danger` — destructive, stop, or shutdown actions such as Stop.
+ * - `ghost` — minimal treatment for cancel or secondary actions.
+ * - `outline` — neutral bordered action for default controls.
+ */
 export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
+  extends
+    ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonStyles> {}
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

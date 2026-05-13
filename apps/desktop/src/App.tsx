@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Top-level React Router configuration for the desktop app.
+ *
+ * This module defines Sangam's page routes and nests every route beneath the
+ * persistent `AppShell` frame so navigation swaps only the page body.
+ */
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
 import { Dashboard } from "./pages/Dashboard";
@@ -8,9 +14,21 @@ import { Runtime } from "./pages/Runtime";
 import { Analytics } from "./pages/Analytics";
 import { Settings } from "./pages/Settings";
 
-/// Top-level routed app. Every page renders inside `AppShell` so the
-/// sidebar + top bar persist across navigations and only the page body
-/// animates in/out.
+/**
+ * Top-level routed app.
+ *
+ * Route structure:
+ * - `/` → Dashboard
+ * - `/cluster` → focused topology view
+ * - `/nodes` → active node inventory
+ * - `/tasks` → task queue
+ * - `/runtime` → live runtime console
+ * - `/analytics` → resource graphs
+ * - `/settings` → local configuration controls
+ *
+ * All routes nest inside `AppShell` so the sidebar and top bar persist across
+ * navigations while only the page body re-renders and animates.
+ */
 function App() {
   return (
     <BrowserRouter>

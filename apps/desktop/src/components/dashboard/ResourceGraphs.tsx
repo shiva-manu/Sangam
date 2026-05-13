@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Resource and task-throughput graph panel.
+ *
+ * Renders compact charts for CPU, RAM, network RX/TX, and task-state totals
+ * using recent runtime samples and aggregate task counts.
+ */
 import { useMemo } from "react";
 import {
   Area,
@@ -17,16 +23,19 @@ import {
 import { formatKbps, formatPct } from "../../lib/format";
 import type { MetricsSample } from "../../lib/types";
 
-/// Section 6 — Cluster Resource Graphs.
-///
-/// Four small charts in a 2×2 grid: CPU, RAM, network throughput, and
-/// task throughput. Recharts with gradient fills + cyan/violet palette.
+/**
+ * Section 6 — Cluster Resource Graphs.
+ *
+ * Four small charts in a 2×2 grid: CPU, RAM, network throughput, and task
+ * throughput.  Recharts provides responsive canvases and gradient area fills.
+ */
 export function ResourceGraphs() {
   const { data: samples } = useMetricsHistory();
   const { data: counts } = useStatusCounts();
 
-  // Recharts wants numeric x-axis values; map timestamps to seconds-relative
-  // to the most-recent sample so the axis reads as "Xs ago" cleanly.
+  // Recharts wants numeric x-axis values. `transform()` maps timestamps to
+  // seconds relative to the latest sample so the chart behaves like a sliding
+  // "last N seconds" window instead of showing absolute Unix time.
   const data = useMemo(() => transform(samples), [samples]);
 
   const latest: MetricsSample | undefined = samples[samples.length - 1];
@@ -95,6 +104,8 @@ type SamplePoint = {
   tx: number;
 };
 
+// Normalises raw metrics into chart points, anchoring time at the newest
+// sample so older points are negative seconds (e.g. -30, -29, …, 0).
 function transform(samples: MetricsSample[]): SamplePoint[] {
   if (samples.length === 0) return [];
   const last = samples[samples.length - 1].timestamp_ms;
@@ -164,9 +175,7 @@ function MiniChart({
           <span style={{ color: c.stroke }}>{icon}</span>
           {title}
         </div>
-        <div className="text-xs font-mono text-ink tabular-nums">
-          {current}
-        </div>
+        <div className="text-xs font-mono text-ink tabular-nums">{current}</div>
       </div>
       <div className="h-24 -mx-2">
         <ResponsiveContainer width="100%" height="100%">
@@ -224,9 +233,9 @@ function MiniChart({
   );
 }
 
-/// Recharts' Tooltip content prop calls our component with `active`,
-/// `payload`, etc., but the public TS type for those args has drifted
-/// across versions. Declare just what we read; treat as a local contract.
+// Recharts' Tooltip content prop calls our component with `active`, `payload`,
+// etc., but the public TS type for those args has drifted across versions.
+// Declare just what we read inline and treat it as this component's local contract.
 type TooltipPayload = {
   color?: string;
   dataKey?: string | number;
@@ -259,10 +268,17 @@ function ChartTooltip({ active, payload, unit }: ChartTooltipProps) {
   );
 }
 
+// Task-throughput tile: displays aggregate task-state counts as both a total
+// and a proportional stacked bar.
 function TaskThroughput({
   counts,
 }: {
-  counts: { queued: number; running: number; completed: number; failed: number };
+  counts: {
+    queued: number;
+    running: number;
+    completed: number;
+    failed: number;
+  };
 }) {
   const total =
     counts.queued + counts.running + counts.completed + counts.failed;
@@ -282,8 +298,16 @@ function TaskThroughput({
         <Stacked counts={counts} />
         <div className="grid grid-cols-4 gap-2 text-[10px]">
           <Legend tone="text-ink-muted" label="queued" value={counts.queued} />
-          <Legend tone="text-accent-cyan" label="running" value={counts.running} />
-          <Legend tone="text-accent-green" label="done" value={counts.completed} />
+          <Legend
+            tone="text-accent-cyan"
+            label="running"
+            value={counts.running}
+          />
+          <Legend
+            tone="text-accent-green"
+            label="done"
+            value={counts.completed}
+          />
           <Legend tone="text-accent-red" label="failed" value={counts.failed} />
         </div>
       </div>
@@ -291,10 +315,17 @@ function TaskThroughput({
   );
 }
 
+// Proportional stacked bar. Each segment width is count / total; `|| 1` guards
+// the empty-state denominator so zero tasks never produce NaN widths.
 function Stacked({
   counts,
 }: {
-  counts: { queued: number; running: number; completed: number; failed: number };
+  counts: {
+    queued: number;
+    running: number;
+    completed: number;
+    failed: number;
+  };
 }) {
   const total =
     counts.queued + counts.running + counts.completed + counts.failed || 1;
@@ -302,8 +333,14 @@ function Stacked({
   return (
     <div className="h-2 w-full rounded-full bg-white/[0.04] overflow-hidden flex">
       <div className="bg-ink-dim/40" style={{ width: pct(counts.queued) }} />
-      <div className="bg-accent-cyan/60" style={{ width: pct(counts.running) }} />
-      <div className="bg-accent-green/60" style={{ width: pct(counts.completed) }} />
+      <div
+        className="bg-accent-cyan/60"
+        style={{ width: pct(counts.running) }}
+      />
+      <div
+        className="bg-accent-green/60"
+        style={{ width: pct(counts.completed) }}
+      />
       <div className="bg-accent-red/60" style={{ width: pct(counts.failed) }} />
     </div>
   );

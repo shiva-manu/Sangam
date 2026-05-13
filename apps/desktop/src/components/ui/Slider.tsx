@@ -1,7 +1,19 @@
+/**
+ * @fileoverview Styled range slider built on Radix UI's Slider primitive.
+ *
+ * The Settings page uses this control for numeric runtime policy inputs such as
+ * CPU contribution limits.
+ */
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { forwardRef, type ComponentPropsWithoutRef } from "react";
 import { cn } from "../../lib/cn";
 
+/**
+ * Sangam-styled slider with a cyan→violet gradient fill.
+ *
+ * The gradient reinforces the same accent language used by live charts while
+ * making contribution-limit adjustments feel visually connected to capacity.
+ */
 export const Slider = forwardRef<
   HTMLSpanElement,
   ComponentPropsWithoutRef<typeof SliderPrimitive.Root>

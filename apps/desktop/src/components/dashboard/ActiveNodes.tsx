@@ -1,20 +1,28 @@
+/**
+ * @fileoverview Active node inventory for the local Sangam mesh.
+ *
+ * The panel displays this device with live metrics first, followed by each
+ * discovered peer with advertised hardware specs and freshness-based status.
+ */
 import { motion, AnimatePresence } from "framer-motion";
 import { Cpu, MemoryStick, Server, Signal, Wifi } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "../ui/Card";
 import { Badge } from "../ui/Badge";
-import { useMetrics, useNodeInfo, usePeers } from "../../hooks/use-runtime-data";
 import {
-  formatPct,
-  formatRelativeTime,
-  shortId,
-} from "../../lib/format";
+  useMetrics,
+  useNodeInfo,
+  usePeers,
+} from "../../hooks/use-runtime-data";
+import { formatPct, formatRelativeTime, shortId } from "../../lib/format";
 import { cn } from "../../lib/cn";
 import type { Peer } from "../../lib/types";
 
-/// Section 3 — Active Nodes Panel.
-///
-/// Shows this device first (with live metrics), then every discovered
-/// peer as a card. Cards animate in/out as peers come and go.
+/**
+ * Section 3 — Active Nodes Panel.
+ *
+ * Shows this device first (with live metrics), then every discovered peer as a
+ * card.  Cards animate in/out as peers come and go.
+ */
 export function ActiveNodes() {
   const { data: info } = useNodeInfo();
   const { data: metrics } = useMetrics();
@@ -66,10 +74,20 @@ export function ActiveNodes() {
   );
 }
 
-function PeerNodeCard({ peer, totalPeers }: { peer: Peer; totalPeers: number }) {
-  // We don't have CPU/RAM telemetry FROM the peer yet — surface what we
-  // know (CPU thread count, RAM in GiB from mDNS TXT) and an inferred
-  // freshness "status" instead of fake numbers. Honest UI > misleading UI.
+/**
+ * Renders a remote peer using advertised specs rather than live telemetry.
+ *
+ * Sangam does not yet stream CPU/RAM usage from peers, so this card follows the
+ * honest UI principle: show mDNS-advertised capacity and freshness instead of
+ * fabricating live utilisation values.
+ */
+function PeerNodeCard({
+  peer,
+  totalPeers,
+}: {
+  peer: Peer;
+  totalPeers: number;
+}) {
   const ageMs = Date.now() - peer.last_seen_ms;
   const status: NodeStatus =
     ageMs < 5000 ? "active" : ageMs < 15000 ? "busy" : "stale";
@@ -82,7 +100,7 @@ function PeerNodeCard({ peer, totalPeers }: { peer: Peer; totalPeers: number }) 
     <NodeCard
       name={peer.name.replace("._sangam._udp.local.", "")}
       subtitle={peer.addr}
-      // CPU/RAM unknown from this side — show the advertised specs instead.
+      // CPU/RAM live usage is unknown from this side; show advertised specs.
       cpuLabel={peer.cpu_threads ? `${peer.cpu_threads} threads` : "—"}
       ramLabel={peer.ram_gib ? `${peer.ram_gib} GB` : "—"}
       latencyMs={ageMs}
@@ -105,6 +123,8 @@ const statusMeta: Record<
   stale: { label: "Stale", tone: "red" },
 };
 
+// Shared node card. Self uses numeric `cpu`/`ramPct` live metrics; peers use
+// `cpuLabel`/`ramLabel` strings for advertised capacity until remote telemetry exists.
 function NodeCard({
   name,
   subtitle,
@@ -225,6 +245,8 @@ function NodeCard({
   );
 }
 
+// Metric row with an optional animated progress bar. If `progress` is omitted
+// (peer spec mode), only the textual value is rendered.
 function MetricRow({
   icon,
   label,
@@ -253,6 +275,7 @@ function MetricRow({
         <span className="font-mono text-ink">{value}</span>
       </div>
       <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden">
+        {/* Animated width keeps rapidly changing CPU/RAM values smooth. */}
         {progress !== undefined && (
           <motion.div
             className={cn("h-full rounded-full bg-gradient-to-r", bar)}

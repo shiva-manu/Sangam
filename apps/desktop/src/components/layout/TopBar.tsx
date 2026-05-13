@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Persistent top bar for runtime controls and cluster pulse.
+ *
+ * Mounted once by `AppShell`, this component shows mesh status, live resource
+ * stats, search, and the runtime Start/Stop control across every page.
+ */
 import { motion } from "framer-motion";
 import { Cpu, MemoryStick, Search, Wifi, Power } from "lucide-react";
 import { Button } from "../ui/Button";
@@ -11,8 +17,10 @@ import { api } from "../../lib/tauri";
 import { formatPct, formatMib } from "../../lib/format";
 import { cn } from "../../lib/cn";
 
-/// Top bar: cluster status + live system pulse + search + start/stop.
-/// Mounted once by AppShell; every page sees the same instance.
+/**
+ * Renders cluster status, live CPU/RAM stats, peer count, search, and runtime
+ * control actions in the persistent application header.
+ */
 export function TopBar() {
   const { data: info, refresh: refreshInfo } = useNodeInfo();
   const { data: peers } = usePeers();
@@ -28,13 +36,15 @@ export function TopBar() {
       : 0;
 
   const handleToggle = async () => {
+    // Optimistic refresh pattern: mutate runtime state, then immediately ask
+    // the node-info hook to refetch so the status pill updates without waiting
+    // for the next 1 s polling tick.
     try {
       if (running) {
         await api.stopRuntime();
       } else {
         await api.startRuntime();
       }
-      // Optimistic refresh so the pill updates immediately.
       void refreshInfo();
     } catch (e) {
       // Failures surface via the existing error state inside hooks; don't
@@ -119,8 +129,8 @@ export function TopBar() {
         </Button>
       </div>
 
-      {/* Subtle progress shimmer at the bottom edge while running, just to
-          give the bar a pulse. Decorative. */}
+      {/* Pure decoration: a subtle bottom-edge shimmer while running gives the
+          persistent bar a pulse without conveying additional data. */}
       {running && (
         <motion.div
           className="absolute bottom-0 left-0 right-0 h-px overflow-hidden"
@@ -137,10 +147,13 @@ export function TopBar() {
   );
 }
 
+// Small vertical rule used to group status clusters without extra markup noise.
 function Divider() {
   return <div className="w-px h-5 bg-white/[0.06]" />;
 }
 
+// Compact metric helper used for peer count, CPU, and RAM in the constrained
+// top-bar layout.
 function Stat({
   icon,
   label,

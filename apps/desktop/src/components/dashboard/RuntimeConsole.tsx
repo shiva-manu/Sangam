@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Live structured runtime console for Sangam events.
+ *
+ * Displays a tailing log stream with client-side level filters, source tags,
+ * level colouring, and auto-scroll behaviour that respects user scrollback.
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronDown, Filter, Terminal } from "lucide-react";
@@ -8,11 +14,13 @@ import { formatTime } from "../../lib/format";
 import { cn } from "../../lib/cn";
 import type { LogLevel } from "../../lib/types";
 
-/// Section 5 — Distributed Runtime Console.
-///
-/// Live, structured tail of runtime events. Warp-style: monospace rows,
-/// level colouring, source-tagged. Auto-sticks to the bottom while the
-/// user is at the bottom; pauses auto-scroll when the user scrolls up.
+/**
+ * Section 5 — Distributed Runtime Console.
+ *
+ * Live, structured tail of runtime events.  Warp-style: monospace rows,
+ * level colouring, source tags, and bottom-stick auto-scroll while the user
+ * remains at the end of the stream.
+ */
 const LEVEL_FILTERS: { value: LogLevel | "all"; label: string }[] = [
   { value: "all", label: "All" },
   { value: "info", label: "Info" },
@@ -21,6 +29,8 @@ const LEVEL_FILTERS: { value: LogLevel | "all"; label: string }[] = [
 ];
 
 export function RuntimeConsole() {
+  // `useLogs` owns the logsRef ref-mirror that keeps the live Tauri listener
+  // appending to fresh state instead of a stale closure.
   const logs = useLogs();
   const [filter, setFilter] = useState<LogLevel | "all">("all");
   const [autoScroll, setAutoScroll] = useState(true);
@@ -43,6 +53,8 @@ export function RuntimeConsole() {
   const handleScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
+    // Auto-scroll detection: if the remaining scroll distance is <16 px,
+    // consider the user pinned to the bottom and keep tailing new entries.
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 16;
     setAutoScroll(atBottom);
   };
@@ -147,6 +159,8 @@ export function RuntimeConsole() {
   );
 }
 
+// Level metadata drives log-line colouring: debug is muted, info is cyan,
+// warn is amber, and error is red to match the rest of the dashboard palette.
 const levelMeta: Record<
   LogLevel,
   { dot: string; label: string; chip: "neutral" | "cyan" | "amber" | "red" }
@@ -157,7 +171,17 @@ const levelMeta: Record<
   error: { dot: "bg-accent-red", label: "ERR", chip: "red" },
 };
 
-function LogLine({ entry }: { entry: { timestamp_ms: number; level: LogLevel; source: string; message: string } }) {
+// Individual console row: timestamp, severity chip, source tag, then message.
+function LogLine({
+  entry,
+}: {
+  entry: {
+    timestamp_ms: number;
+    level: LogLevel;
+    source: string;
+    message: string;
+  };
+}) {
   const meta = levelMeta[entry.level];
   return (
     <div className="group flex items-start gap-2 py-0.5 hover:bg-white/[0.02] -mx-3 px-3 rounded">
@@ -175,9 +199,7 @@ function LogLine({ entry }: { entry: { timestamp_ms: number; level: LogLevel; so
       >
         {meta.label}
       </span>
-      <span className="shrink-0 text-ink-muted">
-        [{entry.source}]
-      </span>
+      <span className="shrink-0 text-ink-muted">[{entry.source}]</span>
       <span className="text-ink min-w-0 break-words">{entry.message}</span>
     </div>
   );

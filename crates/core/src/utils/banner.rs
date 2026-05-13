@@ -1,7 +1,26 @@
+//! Startup banner for the Sangam headless CLI.
+//!
+//! Prints a brief header to stdout the first time the node process starts,
+//! making it easy to confirm which version of the runtime is running without
+//! having to inspect the binary directly.
+
 /// Project version, sourced at compile time from `Cargo.toml` so the
 /// banner can never drift out of sync with the package metadata.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// Print the Sangam startup banner to stdout.
+///
+/// Outputs the project name and the compile-time version string surrounded
+/// by a decorative border. This function is called once at process startup,
+/// before any async tasks are spawned, so the banner always appears at the
+/// very top of the terminal output.
+///
+/// # Example output
+/// ```text
+/// =======================================================
+///                      Sangam v0.1.0
+/// =======================================================
+/// ```
 pub fn show_banner() {
     println!("\n=======================================================");
     println!("                     Sangam v{}", VERSION);

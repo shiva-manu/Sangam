@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Settings page for mesh contribution and policy controls.
+ *
+ * The UI is intentionally wired with local state while the backend policy API
+ * is still evolving; it establishes the UX shape for future runtime settings.
+ */
 import { useState } from "react";
 import {
   BatteryCharging,
@@ -13,13 +19,16 @@ import { Switch } from "../components/ui/Switch";
 import { Slider } from "../components/ui/Slider";
 import { Badge } from "../components/ui/Badge";
 
-/// Settings page.
-///
-/// All controls are local-only for now (state in the component). Once
-/// the backend grows a `RuntimePolicy` struct + Tauri commands to read
-/// / write it, swap each handler to call the real API. For now the
-/// page is wired for visual completeness and to lock in the UX shape.
+/**
+ * Settings page.
+ *
+ * All controls are local-only for now. Once the backend grows a `RuntimePolicy`
+ * struct plus Tauri commands to read/write it, each `useState` pair can be
+ * replaced or hydrated by the real API.  For now the page locks in UX shape.
+ */
 export function Settings() {
+  // Local-only settings state: no persistence yet because the Rust backend does
+  // not currently expose a `RuntimePolicy` struct or policy mutation commands.
   const [cpuLimit, setCpuLimit] = useState(60);
   const [batteryMode, setBatteryMode] = useState(true);
   const [isolation, setIsolation] = useState(true);
@@ -120,6 +129,9 @@ export function Settings() {
             title="Trusted devices"
             description={`Only accept tasks from these peers (${whitelist.length} configured)`}
           >
+            {/* Whitelist management is local/demo-only: remove filters by index,
+                while add appends a generated placeholder device name until the
+                backend provides durable trusted-device APIs. */}
             <div className="flex flex-col gap-2 min-w-[280px]">
               {whitelist.map((name, i) => (
                 <div
@@ -236,6 +248,8 @@ export function Settings() {
   );
 }
 
+// Field helper: shared two-column settings row with label/description on the
+// left and the interactive control aligned on the right.
 function Field({
   title,
   description,
@@ -258,6 +272,7 @@ function Field({
   );
 }
 
+// Row helper: compact read-only metadata row used by the About card.
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between border-b border-white/[0.04] py-1.5 last:border-0">
