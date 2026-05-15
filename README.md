@@ -1,22 +1,73 @@
 # Sangam
 
-Sangam is a local-first peer-to-peer compute mesh for turning nearby machines
-on the same network into a temporary collaborative compute cluster.
-
-Think of it as an early prototype for "AirDrop for compute": nodes discover
-each other over the LAN, exchange workload messages, track task progress, and
-surface the mesh through a desktop control plane.
+> **AirDrop for Compute** — Turn nearby machines into a collaborative compute mesh.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2024-orange.svg)](Cargo.toml)
 [![Tauri](https://img.shields.io/badge/Tauri-2-24C8DB.svg)](apps/desktop/src-tauri/Cargo.toml)
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg)](apps/desktop/package.json)
+[![Status](https://img.shields.io/badge/status-early--development-yellow.svg)]()
 
-## Status
+Sangam is a **local-first, peer-to-peer compute mesh** that transforms nearby machines on the same network into a temporary collaborative compute cluster. Built with Rust and Tauri 2, it enables teams, researchers, and developers to pool idle CPU, memory, and network capacity — without provisioning cloud infrastructure for every experiment.
 
-Sangam is in active early development. The repository currently contains a
-working Rust runtime prototype and a Tauri desktop app, but it is not yet a
-general-purpose secure remote execution platform.
+## ✨ Key Features
+
+| Feature | Description |
+|---------|-------------|
+| 🌐 **LAN Peer Discovery** | Automatic node discovery via mDNS (`_sangam._udp.local.`) |
+| 🖥️ **Desktop Control Plane** | Beautiful React + Tauri 2 UI with real-time metrics, logs, and task tracking |
+| ⚡ **Lightweight Runtime** | Rust core with Tokio async runtime, minimal overhead |
+| 📊 **Transparent Operations** | Visualize peers, resources, task state, and runtime logs in real-time |
+| 🔒 **Security-First Design** | Built with strong isolation and explicit trust boundaries in mind |
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+**Core Runtime:**
+- Rust stable toolchain (2024 edition)
+
+**Desktop App:**
+- Node.js and npm
+- Rust stable toolchain
+- Tauri system prerequisites for your OS
+
+On Ubuntu/Debian:
+```bash
+sudo apt install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
+  libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+```
+
+For other OSes, see [official Tauri prerequisites](https://tauri.app/start/prerequisites/).
+
+### Installation
+
+Clone the repository:
+```bash
+git clone https://github.com/shiva-manu/Sangam.git
+cd Sangam
+```
+
+### Running the Project
+
+**Run the headless runtime:**
+```bash
+cargo run -p sangam-core
+```
+
+**Run the desktop app:**
+```bash
+npm run desktop:dev
+```
+
+Or manually:
+```bash
+cd apps/desktop
+npm install
+npm run tauri dev
+```
+
+## 📊 Current Status
 
 Implemented today:
 
@@ -36,7 +87,7 @@ Planned, not production-ready yet:
 - Resource-aware scheduling, retries, result aggregation, and DAG execution.
 - Packaged desktop releases and a stable developer-facing workload API.
 
-## Why Sangam Exists
+## 💡 Why Sangam Exists
 
 Modern laptops often sit near each other with unused CPU, memory, and network
 capacity. Sangam explores a lightweight way for teams, students, researchers,
