@@ -20,9 +20,11 @@ race, caste, color, religion, or sexual identity and orientation.
 We pledge to act and interact in ways that contribute to an open, welcoming,
 diverse, inclusive, and healthy community.
 
-## Expected Behavior
+## Our Standards
 
-Examples of behavior that contributes to a positive environment include:
+### Expected Behavior
+
+Behavior that contributes to a positive environment includes:
 
 - Showing empathy, patience, and kindness toward other people.
 - Respecting different opinions, constraints, backgrounds, and experiences.
@@ -30,10 +32,14 @@ Examples of behavior that contributes to a positive environment include:
 - Accepting responsibility, correcting mistakes, and apologizing when needed.
 - Asking clarifying questions before assuming bad intent.
 - Helping keep discussions focused, useful, and accessible to future readers.
+- Being mindful of bandwidth and context when asking questions — do your
+  homework before asking others to do theirs.
+- Respecting maintainers' time and decisions, even when you disagree.
+- Welcoming newcomers and helping them find their footing in the project.
 
-## Unacceptable Behavior
+### Unacceptable Behavior
 
-Examples of unacceptable behavior include:
+Unacceptable behavior includes:
 
 - Harassment, intimidation, stalking, or sustained disruption.
 - Sexualized language or imagery, sexual attention, or sexual advances.
@@ -41,14 +47,22 @@ Examples of unacceptable behavior include:
 - Publishing private information without explicit permission.
 - Dismissing, mocking, or targeting people based on identity or background.
 - Deliberately derailing issues, pull requests, discussions, or reviews.
+- Trolling, baiting, or making bad-faith arguments to provoke a reaction.
+- Repeatedly demanding attention or responses after being asked to stop.
+- Using the project's communication channels for commercial spam or off-topic
+  self-promotion.
 - Any conduct that would reasonably be considered inappropriate in a
   professional open source setting.
 
 ## Scope
 
-This Code of Conduct applies in all Sangam project spaces, including issues,
-pull requests, discussions, code review, documentation, community chats, events,
-and private maintainer communications related to the project.
+This Code of Conduct applies in all Sangam project spaces, including:
+
+- GitHub issues, pull requests, discussions, and code review.
+- Documentation and wiki pages.
+- Community chats, forums, and mailing lists.
+- Events, meetups, and conferences where Sangam is represented.
+- Private maintainer communications related to the project.
 
 It also applies when someone is officially representing Sangam in public spaces.
 Examples include using an official project account, presenting on behalf of the
@@ -99,7 +113,38 @@ more of the following actions:
 Enforcement decisions should be proportionate, documented for maintainers, and
 focused on protecting the community and the project.
 
+## Community Guidelines
+
+### Asking Questions
+
+- Search existing issues and discussions before opening a new one.
+- Provide enough context for others to help you — include error messages,
+  steps to reproduce, OS details, and what you already tried.
+- Be patient. Contributors and maintainers have other commitments.
+
+### Code Review
+
+- Review the code, not the person.
+- Explain *why* you are suggesting a change, not just *what* to change.
+- Assume good intent — tone is hard to read in text.
+- If a discussion is getting heated, take a break before responding.
+
+### Reporting Issues
+
+- Be specific and factual.
+- Separate what you observed from what you think caused it.
+- If you are unsure whether something is a bug, open a discussion first.
+
+## Accessibility
+
+Sangam welcomes contributors of all ability levels. If you need accommodations
+to participate in the project — whether in communication, development, testing,
+or events — please reach out to the maintainers. We will work with you to find
+a solution.
+
 ## Attribution
 
-This Code of Conduct is adapted from the Contributor Covenant, version 2.1, and
-tailored for the Sangam project.
+This Code of Conduct is adapted from the [Contributor Covenant][coc],
+version 2.1, and tailored for the Sangam project.
+
+[coc]: https://www.contributor-covenant.org/version/2/1/code_of_conduct.html
